@@ -1,0 +1,28 @@
+The elevator stops at floor           0
+Request to go down from Floor 5
+The elevator stops at floor           0
+The elevator is moving up
+The elevator is moving up
+The elevator is moving up
+The elevator is moving up
+The elevator is moving up
+The elevator stops at floor           5
+destination is set to Floor 0
+Request to go up from Floor 3
+The elevator stops at floor           5
+The elevator is moving down
+The elevator is moving down
+The elevator is moving down
+The elevator is moving down
+The elevator is moving down
+The elevator stops at floor           0
+The elevator is moving up
+The elevator is moving up
+The elevator is moving up
+The elevator stops at floor           3
+desitination is set to Floor 0
+The elevator stops at floor           3
+The elevator is moving down
+The elevator is moving down
+The elevator is moving down
+The elevator stops at floor           0

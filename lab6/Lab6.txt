@@ -1,0 +1,16 @@
+## CSE 140L: Lab Assignment 6
+
+# Name:
+# PID:
+# Email:
+
+################
+# For the following questions, please write your answer one space after ``:''.
+# Here is an example
+# Exercise 0.0: Calulate the area of an and1 gate
+# Answer 0.0: 1
+###############
+
+Exercise 4: Due to the foggy weather at La Jolla, the floor sensor is damaged and instead of reporting the real floor to the elevator, it will always report that the cabin is at Floor 1. What will happen if somebody inside the cabin pressed 2 on the panel (floor_2_des_request).
+Answer 4:
+
