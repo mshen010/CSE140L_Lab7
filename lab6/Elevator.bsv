@@ -63,7 +63,11 @@ function int nextFloorStop(Vector#(NUM_FLOOR, Bool) floor_up_pressed, Vector#(NU
 			return nextFloorDownStop(floor_up_pressed, floor_down_pressed, floor_des, currentFloor);
 		//Check for request to go down from top floor, otherwise go down
 		else if(currentFloor == 1)
-			if(floor_down_pressed[2] == True)
+			if(floor_down_pressed[1] == True || floor_des[1] == True)
+				return currentFloor;
+			else if(floor_up_pressed[0] == True || floor_des[0] == True)
+				return nextFloorDownStop(floor_up_pressed, floor_down_pressed, floor_des, currentFloor);
+			else if(floor_down_pressed[2] == True)
 				return nextFloorUpStop(floor_up_pressed, floor_down_pressed, floor_des, currentFloor);
 			else
 				return nextFloorDownStop(floor_up_pressed, floor_down_pressed, floor_des, currentFloor);
@@ -76,7 +80,11 @@ function int nextFloorStop(Vector#(NUM_FLOOR, Bool) floor_up_pressed, Vector#(NU
 			return nextFloorUpStop(floor_up_pressed, floor_down_pressed, floor_des, currentFloor);
 		//Check for request to go down, otherwise go up
 		else if(currentFloor == 1)
-			if(floor_up_pressed[0] == True || floor_des[0] == True)
+			if(floor_up_pressed[1] == True || floor_des[1] == True)
+				return currentFloor;
+			else if(floor_down_pressed[2] == True || floor_des[2] == True)
+				return nextFloorUpStop(floor_up_pressed, floor_down_pressed, floor_des, currentFloor);
+			else if(floor_up_pressed[0] == True || floor_des[0] == True)
 				return nextFloorDownStop(floor_up_pressed, floor_down_pressed, floor_des, currentFloor);
 			else
 				return nextFloorUpStop(floor_up_pressed, floor_down_pressed, floor_des, currentFloor);

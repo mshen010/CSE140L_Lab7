@@ -3,7 +3,9 @@ import staffElevator::*;
 import Elevator::*;
 import ElevatorInterface::*;
 import Vector::*;
-
+import LFSR::*;
+import FIFO::*;
+import TbNextFloor::*;
 (* synthesize *)
 module mkNextFloorUpStop();
     Reg#(Bit#(32)) cycle <- mkReg(0);
@@ -123,165 +125,59 @@ endfunction
 (* synthesize *)
 module mkNextFloorStop();
     Reg#(Bit#(32)) cycle <- mkReg(0);
-    Randomize#(Vector#(NUM_FLOOR, Bool)) floor_up_pressed <- mkGenericRandomizer;
-    Randomize#(Vector#(NUM_FLOOR, int)) floor_up_des <- mkGenericRandomizer;
-    Randomize#(Vector#(NUM_FLOOR, Bool)) floor_down_pressed <- mkGenericRandomizer;
-    Randomize#(Vector#(NUM_FLOOR, int)) floor_down_des <- mkGenericRandomizer;
-
-    Randomize#(int) currentFloor <- mkGenericRandomizer;
-    Randomize#(Bool) direction <- mkGenericRandomizer;
-
-    Reg#(Bool) nextTest <- mkReg(True);
-    Reg#(Vector#(NUM_FLOOR, Bool)) up_pressed <- mkReg(replicate(False));
-    Reg#(Vector#(NUM_FLOOR, int)) up_des <- mkReg(replicate(0));
-    Reg#(Vector#(NUM_FLOOR, Bool)) down_pressed <- mkReg(replicate(False));
-    Reg#(Vector#(NUM_FLOOR, int)) down_des <- mkReg(replicate(0));
-    Reg#(Vector#(NUM_FLOOR, Bool)) des <- mkReg(replicate(False));
-    Reg#(int) current <- mkReg(0);
-    Reg#(Bool) c_direction <- mkReg(False);
-    Reg#(Bool) reset_des_reg <- mkReg(False);
-    Reg#(Bool) display <- mkReg(False);
-    Reg#(Bool) up_floor <- mkReg(True);
-    Reg#(int) phase <- mkReg(1);
-    Reg#(int) tle <- mkReg(0);
-
-    rule upFloor if ( !nextTest && !all_clear(up_pressed, down_pressed, des) && phase == 0);
-        phase <= 1;
-        //$display("upFloor %d %d",  nextFloorStop( up_pressed, down_pressed, des, current, UP), nextFloorStop( up_pressed, down_pressed, des, current, DOWN) );
-        up_floor <= False;
-        if ( c_direction == True)
-        begin
-                current <= nextFloorStop( up_pressed, down_pressed, des, current, UP);
-                if ( current >  nextFloorStop( up_pressed, down_pressed, des, current, UP))
-                c_direction <= False;
-        end
-        else if ( c_direction == False) begin 
-                 current <= nextFloorStop( up_pressed, down_pressed, des, current, DOWN);
-                if ( current < nextFloorStop(up_pressed, down_pressed, des, current, DOWN))
-                c_direction <= True;
-	end
-    endrule
-
-    rule go_to_next_stop if ( !nextTest && !all_clear(up_pressed, down_pressed, des) && phase == 1);
-        phase <= 2;
-        up_floor <= True;
-        reset_des_reg <= True;
-        tle <= tle + 1;
-        $display("The elevator stops at Floor %d", current);
-        if (tle > 20)
-        begin
-                $display("FAIL: ELEVATOR STALLS");
-                $finish(0);
-        end
-        if (c_direction == True)
-        begin
-                //$display("go up");
-                //current <= nextFloorStop( up_pressed, down_pressed, des, current, UP);
-                if (up_pressed[current]) begin
-                        up_pressed[current] <= False;
-                        des[regularize(up_des, UP)[current]] <= True;
-                end else if ( !des[current] && !up_pressed[current])
-                begin
-                        if (down_pressed[current])
-                        begin
-                                down_pressed[current] <= False;
-                                des[regularize(down_des,DOWN)[current]] <= True;
-                                c_direction <= False;
-                        end
-                end
-        end
-        else if (c_direction ==False)
-        begin
-                //$display("go down %d %d",nextFloorStop( up_pressed, down_pressed, des, current, DOWN), current );
-                //current <= nextFloorStop( up_pressed, down_pressed, des, current, DOWN);
-                if (down_pressed[current]) begin
-                        down_pressed[current] <= False;
-                        des[regularize(down_des,DOWN)[current]] <= True;
-                end else if ( !des[current] && !down_pressed[current])
-                begin
-                        if (up_pressed[current])
-                        begin
-
-                                //$display("ok %d", regularize(up_des,UP)[current]);
-                                up_pressed[current] <= False;
-                                des[regularize(up_des, UP)[current]] <= True;
-                                c_direction <= True;
-                        end
-                end
-        end
-    endrule
-
-    rule finish if (!nextTest && all_clear(up_pressed, down_pressed, des));
-        cycle <= cycle + 1;
-        $display("FINISH TEST %d", cycle);
-        nextTest <= True;
-    endrule
-
-    rule reset_des if (!nextTest && phase == 2 );
-        phase <= 0;
-        //$display("reset_des_reg");
-        if (des[current]) begin
-                reset_des_reg <= False;
-                des[current] <= False;
-        end
-    endrule
-
-
-    rule test if (nextTest);
+    TestNextFloor testTb <- mkTbNextFloor;
+    rule test;
         if(cycle == 0) begin
-            floor_up_pressed.cntrl.init;
-            floor_up_des.cntrl.init;
-            floor_down_pressed.cntrl.init;
-            floor_down_des.cntrl.init;
-            currentFloor.cntrl.init;
-            direction.cntrl.init;
-            cycle <= cycle + 1;
+            
         end else if(cycle == 128) begin
-            $display("FINISH ALL TEST");
+            $display("PASSED");
             $finish;
-        end else if (!display) begin
-            let static_current <- currentFloor.next;
-            let static_c_direction <- direction.next;
-            let static_up_pressed <- floor_up_pressed.next;
-            let static_down_pressed <- floor_down_pressed.next;
-            let static_up_des <- floor_up_des.next;
-            let static_down_des <- floor_down_des.next;
-            static_up_pressed[valueOf(NUM_FLOOR)-1] = False;
-            static_down_pressed[0] = False;
-            current <= abs(static_current % fromInteger(valueOf(NUM_FLOOR)));
-            c_direction <= static_c_direction;
-            up_pressed <= static_up_pressed;
-            down_pressed <= static_down_pressed;
-            up_des <= static_up_des;
-            down_des <= static_down_des;
-            display <= True;
-            tle <= 0;
-            $display("START TEST %d", cycle);
-        end else if (display) begin
-            $display("currentFloor=%d",abs(current % fromInteger(valueOf(NUM_FLOOR))) );
-            Direction dir = UP;
-            if (c_direction == False)
-                dir = DOWN;
-
-            if (dir == UP)
-                $display("MOVING DIRECTION: UP");
-            else
-                $display("MOVING DIRECTION: DOWN");
-
-            for ( Integer i = 0; i < valueOf(NUM_FLOOR); i = i + 1 )
-                begin
-                        if (up_pressed[i])
-                                $display("A PERSON AT FLOOR %d REQUEST TO GO UP, ONCE ENTERED CABIN HE OR SHE WILL PRESS FLOOR %d", i, regularize(up_des,UP)[i] );
-                        if (down_pressed[i])
-                                $display("A PERSON AT FLOOR %d REQUEST TO GO DOWN, ONCE ENTERED CABIN HE OR SHE WILL PRESS FLOOR %d", i, regularize(down_des,DOWN)[i]);
-                end
-            display <= False;
-            nextTest <= False;
-            //cycle <= cycle + 1;
+        end else begin
+		TestObj x <- testTb.getObj;
+            Vector#(NUM_FLOOR, Bool) up_pressed = x.floor_up_pressed;
+            Vector#(NUM_FLOOR, Bool) down_pressed  = x.floor_down_pressed;
+            Vector#(NUM_FLOOR, Bool) des =  x.floor_des;
+	    Direction dir = x.direction;
+	    int current = x.currentFloor ;
+            if(staff_nextFloorStop(up_pressed, down_pressed, des, abs(current % fromInteger(valueOf(NUM_FLOOR))), dir ) != nextFloorStop(up_pressed, down_pressed, des, abs(current % fromInteger(valueOf(NUM_FLOOR))), dir) ) begin
+		$display("FAILED!");
+		for ( Integer i = 0; i < valueOf(NUM_FLOOR); i = i + 1 )
+			begin
+				$display("Floor:%d floor_up_pressed    = %s",i,up_pressed[i]?"True":"False");
+                                $display("Floor:%d floor_down_pressed  = %s",i,down_pressed[i]?"True":"False");
+                                $display("Floor:%d floor_des           = %s",i, des[i]?"True":"False");
+                                $display("----------------------------------------------");
+			end
+		$display("currentFloor=%d",abs(current % fromInteger(valueOf(NUM_FLOOR))) );
+		if (dir == UP)
+		    $display("moving direction: UP");
+	        else
+		    $display("moving direction: DOWN");
+		$display("Expected=%d, Your answer=%d",staff_nextFloorStop(up_pressed, down_pressed, des, abs(current % fromInteger(valueOf(NUM_FLOOR))), dir ), nextFloorStop(up_pressed, down_pressed, des, abs(current % fromInteger(valueOf(NUM_FLOOR)) ), dir) );
+                $finish;
+            end
+		else begin
+		for ( Integer i = 0; i < valueOf(NUM_FLOOR); i = i + 1 )
+			begin
+				$display("Floor:%d floor_up_pressed    = %s",i,up_pressed[i]?"True":"False");
+				$display("Floor:%d floor_down_pressed  = %s",i,down_pressed[i]?"True":"False");
+				$display("Floor:%d floor_des           = %s",i, des[i]?"True":"False");
+				$display("----------------------------------------------");
+			end
+		$display("currentFloor=%d",abs(current %fromInteger(valueOf(NUM_FLOOR))) );
+		if (dir == UP)
+		    $display("moving direction: UP");
+	        else
+		    $display("moving direction: DOWN");
+		$display("Expected=%d, Your answer=%d",staff_nextFloorStop(up_pressed, down_pressed, des, abs(current % fromInteger(valueOf(NUM_FLOOR)) ), dir), nextFloorStop(up_pressed, down_pressed, des, abs(current % fromInteger(valueOf(NUM_FLOOR)) ), dir) );
+			$display("PASS %d\n______________________________________________________________________", cycle);
+		end
         end
-	endrule
-
+        cycle <= cycle + 1;
+    endrule
 endmodule
+
+
 
 module mkRules();
         Elevator myElevator <- mkElevator();
