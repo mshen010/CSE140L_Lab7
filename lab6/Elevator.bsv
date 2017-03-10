@@ -76,7 +76,7 @@ function int nextFloorStop(Vector#(NUM_FLOOR, Bool) floor_up_pressed, Vector#(NU
 			return nextFloorUpStop(floor_up_pressed, floor_down_pressed, floor_des, currentFloor);
 		//Check for request to go down, otherwise go up
 		else if(currentFloor == 1)
-			if(floor_up_pressed[0] == True)
+			if(floor_up_pressed[0] == True || floor_des[0] == True)
 				return nextFloorDownStop(floor_up_pressed, floor_down_pressed, floor_des, currentFloor);
 			else
 				return nextFloorUpStop(floor_up_pressed, floor_down_pressed, floor_des, currentFloor);
@@ -97,21 +97,35 @@ module mkElevator(Elevator);
 	Reg#(Direction) direction_reg <-mkReg(UP);
 	Reg#(Moving) moving_reg <-mkReg(STOP);
 
-	//(* descending_urgency = "setCurrentFloor, floor_0_up_request, floor_1_up_request, floor_1_down_request, floor_2_down_request, floor_0_des_request, floor_1_des_request, floor_2_des_request, moving, direction, goingUp, goingDown, stopGoingUp, stopGoingDown, changeDirection" *) 
+//	(* descending_urgency = "setCurrentFloor, floor_0_up_request, floor_1_up_request, floor_1_down_request, floor_2_down_request, floor_0_des_request, floor_1_des_request, floor_2_des_request, moving, direction, goingUp, goingDown, stopGoingUp, stopGoingDown, changeDirection" *) 
 	//rules
-	rule goingUp;
-	endrule 
-
-	rule goingDown;
+	rule goingUp if(direction_reg == UP && moving_reg == STOP && nextFloorStop(floor_up_pressed, floor_down_pressed, floor_des, currentFloor,direction_reg) > currentFloor);
+			moving_reg <= START;
 	endrule
-	
-	rule stopGoingUp;
+	// Stops when des_floor is reached 
+	rule goingDown if(direction_reg == DOWN && moving_reg == STOP && nextFloorStop(floor_up_pressed, floor_down_pressed, floor_des, currentFloor,direction_reg) < currentFloor);
+			moving_reg <= START;
 	endrule
-
-	rule stopGoingDown;
+	// Starts going up or changes direction
+	rule stopGoingUp if(direction_reg == UP && moving_reg == START && nextFloorStop(floor_up_pressed,floor_down_pressed,floor_des,currentFloor,direction_reg) == currentFloor);
+		moving_reg <= STOP;
+		floor_up_pressed[currentFloor] <= False;
+		floor_down_pressed[currentFloor] <= False;
+		floor_des[currentFloor] <= False;
 	endrule
-
-	rule changeDirection;
+	// Starts going down or changes direction
+	rule stopGoingDown if(direction_reg == DOWN && moving_reg == START && nextFloorStop(floor_up_pressed,floor_down_pressed,floor_des,currentFloor,direction_reg) == currentFloor);
+		moving_reg <= STOP;
+		floor_up_pressed[currentFloor] <= False;
+		floor_down_pressed[currentFloor] <= False;
+		floor_des[currentFloor] <= False;
+	endrule
+	// Changes direction
+	rule changeDirection if(moving_reg == STOP && nextFloorStop(floor_up_pressed,floor_down_pressed,floor_des,currentFloor,direction_reg) != currentFloor);
+		if(direction_reg == DOWN)
+			direction_reg <= UP;
+		else
+			direction_reg <= DOWN;
 	endrule
 
 	// do not change the following part

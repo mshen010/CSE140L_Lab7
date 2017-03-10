@@ -1,8 +1,8 @@
 ## CSE 140L: Lab Assignment 6
 
-# Name:
-# PID:
-# Email:
+# Name: Michaella Sheng
+# PID: A12182886
+# Email: msheng@ucsd.edu
 
 ################
 # For the following questions, please write your answer one space after ``:''.
@@ -12,5 +12,5 @@
 ###############
 
 Exercise 4: Due to the foggy weather at La Jolla, the floor sensor is damaged and instead of reporting the real floor to the elevator, it will always report that the cabin is at Floor 1. What will happen if somebody inside the cabin pressed 2 on the panel (floor_2_des_request).
-Answer 4:
+Answer 4: Regardless of what floor the elevator is actually on, it will set nextFloorStop to 2, and start moving in the Up direction. Then, because the floor sensor always reports floor 1, the floor destination will never be reached and the elevator will not stop or open the doors.
 
